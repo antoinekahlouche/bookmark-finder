@@ -228,7 +228,7 @@ function createRow(item, parentId, isSelected, isActiveColumn) {
   }
 
   row.addEventListener("mousedown", (event) => {
-    if (event.metaKey || event.ctrlKey) {
+    if (event.metaKey || event.ctrlKey || event.button === 1) {
       event.preventDefault();
     }
   });
@@ -257,6 +257,16 @@ function createRow(item, parentId, isSelected, isActiveColumn) {
 
     const useNewTab = event.metaKey || event.ctrlKey;
     handleRowAction(item.id, parentId, useNewTab);
+  });
+
+  row.addEventListener("auxclick", (event) => {
+    if (event.button !== 1) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    handleRowAction(item.id, parentId, true);
   });
 
   row.addEventListener("contextmenu", (event) => {
@@ -319,7 +329,7 @@ function openBookmark(node, useNewTab) {
 }
 
 function openFolderBookmarks(folder) {
-  const bookmarks = collectBookmarks(folder);
+  const bookmarks = folder.children.filter((child) => child.url);
 
   if (bookmarks.length === 0) {
     return;
@@ -331,24 +341,6 @@ function openFolderBookmarks(folder) {
       active: false,
     });
   });
-}
-
-function collectBookmarks(node) {
-  if (!node) {
-    return [];
-  }
-
-  if (!isFolder(node)) {
-    return node.url ? [node] : [];
-  }
-
-  const bookmarks = [];
-
-  for (const child of node.children) {
-    bookmarks.push(...collectBookmarks(child));
-  }
-
-  return bookmarks;
 }
 
 function handleKeydown(event) {
