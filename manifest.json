@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Bookmark Finder Columns",
+  "version": "0.1.0",
+  "description": "Chrome new tab bookmarks in a macOS Finder-inspired column view.",
+  "permissions": ["bookmarks", "favicon"],
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  }
+}

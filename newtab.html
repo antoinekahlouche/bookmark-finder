@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bookmarks</title>
+    <link rel="stylesheet" href="newtab.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="columns" id="columns" aria-label="Bookmarks Finder" aria-live="polite"></section>
+    </main>
+
+    <div class="context-menu" id="context-menu" role="menu" hidden></div>
+
+    <div class="editor-backdrop" id="editor-backdrop" hidden>
+      <form class="editor-sheet" id="editor-form" novalidate>
+        <h2 class="editor-title" id="editor-title">Edit Bookmark</h2>
+
+        <label class="editor-field">
+          <span class="editor-label">Name</span>
+          <input class="editor-input" id="editor-name" name="name" type="text" autocomplete="off" required>
+        </label>
+
+        <label class="editor-field" id="editor-url-field">
+          <span class="editor-label">URL</span>
+          <input class="editor-input" id="editor-url" name="url" type="url" autocomplete="off" spellcheck="false">
+        </label>
+
+        <p class="editor-error" id="editor-error" hidden></p>
+
+        <div class="editor-actions">
+          <button class="editor-button editor-button-secondary" id="editor-cancel" type="button">Cancel</button>
+          <button class="editor-button editor-button-primary" type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="editor-backdrop" id="delete-backdrop" hidden>
+      <div class="editor-sheet" role="alertdialog" aria-modal="true" aria-labelledby="delete-title" aria-describedby="delete-message">
+        <h2 class="editor-title" id="delete-title">Delete Bookmark</h2>
+        <p class="delete-message" id="delete-message"></p>
+        <p class="editor-error" id="delete-error" hidden></p>
+
+        <div class="editor-actions">
+          <button class="editor-button editor-button-secondary" id="delete-cancel" type="button">Cancel</button>
+          <button class="editor-button delete-button" id="delete-confirm" type="button">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <template id="column-template">
+      <section class="column">
+        <div class="column-items" role="listbox"></div>
+      </section>
+    </template>
+
+    <template id="row-template">
+      <button class="row" type="button">
+        <span class="row-leading">
+          <span class="row-icon" aria-hidden="true"></span>
+          <img class="row-favicon" alt="" hidden>
+        </span>
+        <span class="row-label"></span>
+        <span class="row-trailing" aria-hidden="true"></span>
+      </button>
+    </template>
+
+    <script src="newtab.js"></script>
+  </body>
+</html>
