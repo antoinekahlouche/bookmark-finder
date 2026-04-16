@@ -21,6 +21,7 @@ const elements = {
   editorName: document.getElementById("editor-name"),
   editorUrlField: document.getElementById("editor-url-field"),
   editorUrl: document.getElementById("editor-url"),
+  editorFolder: document.getElementById("editor-folder"),
   editorError: document.getElementById("editor-error"),
   editorCancel: document.getElementById("editor-cancel"),
   deleteBackdrop: document.getElementById("delete-backdrop"),
@@ -668,8 +669,9 @@ function openEditor(nodeId, mode) {
   elements.editorError.textContent = "";
   elements.editorName.value = node.title || "";
   elements.editorUrl.value = node.url || "";
+  elements.editorFolder.value = getNodeFolderPath(node);
   elements.editorUrlField.hidden = mode !== "edit-bookmark";
-  elements.editorTitle.textContent = mode === "edit-bookmark" ? "Edit Bookmark" : isFolder(node) ? "Rename Folder" : "Rename Bookmark";
+  elements.editorTitle.textContent = isFolder(node) ? "Edit Folder" : "Edit Bookmark";
   elements.editorBackdrop.hidden = false;
 
   window.requestAnimationFrame(() => {
@@ -730,6 +732,18 @@ async function handleEditorSubmit(event) {
     title: elements.editorName.value,
   };
 
+  const folderPath = parseFolderPath(elements.editorFolder.value);
+
+  if (!folderPath) {
+    showEditorError("Enter a valid folder path.");
+    return;
+  }
+
+  if (!isAllowedRootFolder(folderPath[0])) {
+    showEditorError('Folder path must start with "Bookmarks Bar" or "Other Bookmarks".');
+    return;
+  }
+
   if (state.editorMode === "edit-bookmark") {
     const normalizedUrl = normalizeBookmarkUrl(elements.editorUrl.value);
 
@@ -742,7 +756,14 @@ async function handleEditorSubmit(event) {
   }
 
   try {
+    const targetParentId = await ensureFolderPath(folderPath, node.id);
+
     await chrome.bookmarks.update(node.id, changes);
+
+    if (node.parentId !== targetParentId) {
+      await chrome.bookmarks.move(node.id, { parentId: targetParentId });
+    }
+
     closeEditor();
     await loadBookmarks();
   } catch (error) {
@@ -854,6 +875,100 @@ function normalizeBookmarkUrl(value) {
   } catch {
     return null;
   }
+}
+
+function getNodeFolderPath(node) {
+  const path = [];
+  let currentId = node.parentId;
+
+  while (currentId && currentId !== state.rootId) {
+    const currentNode = state.nodes.get(currentId);
+
+    if (!currentNode) {
+      break;
+    }
+
+    path.unshift(getNodeTitle(currentNode));
+    currentId = currentNode.parentId;
+  }
+
+  return path.join("/");
+}
+
+function parseFolderPath(value) {
+  const segments = value
+    .split("/")
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+
+  return segments.length > 0 ? segments : null;
+}
+
+function isAllowedRootFolder(value) {
+  return /^(bookmarks bar|other bookmarks)$/i.test(value);
+}
+
+async function ensureFolderPath(pathSegments, movingNodeId) {
+  const rootFolder = getRootFolderByTitle(pathSegments[0]);
+
+  if (!rootFolder) {
+    throw new Error(`Unable to find folder "${pathSegments[0]}".`);
+  }
+
+  let parent = rootFolder;
+
+  for (const segment of pathSegments.slice(1)) {
+    let nextFolder = parent.children.find((child) => isFolder(child) && child.id !== movingNodeId && child.title === segment);
+
+    if (!nextFolder) {
+      nextFolder = await chrome.bookmarks.create({
+        parentId: parent.id,
+        title: segment,
+      });
+      state.nodes.set(nextFolder.id, {
+        ...nextFolder,
+        parentId: parent.id,
+        children: [],
+      });
+      parent.children.push(state.nodes.get(nextFolder.id));
+    }
+
+    if (isNodeDescendantOf(parent.id, movingNodeId)) {
+      throw new Error("Folder cannot be moved inside itself.");
+    }
+
+    parent = nextFolder;
+  }
+
+  if (isNodeDescendantOf(parent.id, movingNodeId)) {
+    throw new Error("Folder cannot be moved inside itself.");
+  }
+
+  return parent.id;
+}
+
+function getRootFolderByTitle(title) {
+  const root = state.nodes.get(state.rootId);
+
+  return root?.children.find((child) => isFolder(child) && child.title.localeCompare(title, undefined, { sensitivity: "accent" }) === 0) || null;
+}
+
+function isNodeDescendantOf(nodeId, ancestorId) {
+  if (!nodeId || !ancestorId) {
+    return false;
+  }
+
+  let currentId = nodeId;
+
+  while (currentId && currentId !== state.rootId) {
+    if (currentId === ancestorId) {
+      return true;
+    }
+
+    currentId = state.nodes.get(currentId)?.parentId || null;
+  }
+
+  return false;
 }
 
 function focusActiveColumn() {
