@@ -269,11 +269,13 @@ function createRow(item, parentId, isSelected, isActiveColumn) {
     handleRowAction(item.id, parentId, true);
   });
 
-  row.addEventListener("contextmenu", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    openContextMenu(item.id, parentId, event.clientX, event.clientY);
-  });
+  if (parentId !== state.rootId) {
+    row.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openContextMenu(item.id, parentId, event.clientX, event.clientY);
+    });
+  }
 
   return row;
 }
@@ -602,15 +604,15 @@ function openContextMenu(nodeId, parentId, x, y) {
 
   if (!isFolder(node)) {
     actions.push({
-      label: "Edit Bookmark...",
+      label: "Edit",
       onSelect: () => openEditor(nodeId, "edit-bookmark"),
     });
+  } else {
+    actions.push({
+      label: "Edit",
+      onSelect: () => openEditor(nodeId, "rename"),
+    });
   }
-
-  actions.push({
-    label: "Rename",
-    onSelect: () => openEditor(nodeId, "rename"),
-  });
 
   actions.push({
     label: "Delete",
