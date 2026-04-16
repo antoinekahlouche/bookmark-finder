@@ -324,10 +324,3 @@ select {
   background: linear-gradient(180deg, #e15b5b 0%, #c73f3f 100%);
   color: #ffffff;
 }
-
-@media (max-width: 900px) {
-  .column {
-    flex-basis: 88vw;
-    min-width: 88vw;
-  }
-}
